@@ -6,14 +6,15 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // base: './', //打包的相对路径
   plugins: [
     vue(),
     vueDevTools(),
   ],
-  base: '/', //打包的相对路径
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
 })
+
