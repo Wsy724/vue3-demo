@@ -7,7 +7,7 @@
      
      <!-- query -->
      <div class="query-box">
-      <el-input-tag class="query-input" v-model="queryInput" placeholder="请输入名字搜索🔍"/>
+      <el-input-tag class="query-input" v-model="queryInput" placeholder="请输入名字搜索🔍" @input="handleQueryName"/>
       <div class="btn-list">
       <el-button type="primary" @click="handleAdd">增加</el-button>
       <el-button type="danger" @click="handleDelList">删除多选</el-button>
@@ -34,7 +34,7 @@
         <template #default="scope">
           <el-button link type="primary" size="small" @click="handleRowDel(scope.row)" style="color: #F56C6C;">删除</el-button>
           
-          <el-button link type="primary" size="small">编辑</el-button>
+          <el-button link type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
         </template>
       </el-table-column>
   </el-table>
@@ -98,6 +98,9 @@ import { ref } from 'vue'
     address: 'No. 189, Grove St, Los Angeles',
   },
 ])
+  let tableDataCopy = ref([])
+  // 初始化拷贝原始数据
+  tableDataCopy.value = [...tableData.value]
   let multipleSelection = ref([])
   let dialogFormVisible = ref(false)
   let tableForm = ref({
@@ -112,6 +115,21 @@ import { ref } from 'vue'
 
   // 方法
 
+//搜索
+const handleQueryName = (val)=>{
+  if (val.length>0) {
+    tableData.value = tableData.value.filter(item => (item.name).toLowerCase().match(val.toLowerCase()))
+  }else{
+    tableData.value = tableDataCopy.value
+  }
+  
+}
+//编辑
+const handleEdit = (row)=>{
+  dialogFormVisible.value = true
+  dialogType.value = 'edit'
+  tableForm.value = {...row}
+}
 
  // 删除单条数据 
 const handleRowDel = ({id}) =>{
@@ -140,19 +158,31 @@ const handleSelectionChange = (val) => {
 const handleAdd = () => {
   dialogFormVisible.value = true
   tableForm.value = {}
+  dialogType.value = 'add'
 }
 
 //确认
 const dialogConfirm = () => {
   dialogFormVisible.value = false
-  // 1.拿到数据
-  // 2.添加到table
+
+  //判断是新增还是更改
+  if (dialogType.value === 'add') {
+    // 1.拿到数据
+    // 2.添加到table
   tableData.value.push(
     {
       id:(tableData.value.length + 1).toString(),
       ...tableForm.value
     }
   )
+  }else{
+    // 1.获取到当前的这条索引
+    let index = tableData.value.findIndex(item => item.id === tableForm.value.id) 
+    // 2.替换当前索引值对应的数据
+    tableData.value[index] = tableForm.value
+  }
+
+  
 }
 
 </script>
