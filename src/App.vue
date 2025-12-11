@@ -7,7 +7,7 @@
      
      <!-- query -->
      <div class="query-box">
-      <el-input-tag class="query-input" v-model="queryInput" placeholder="请输入名字搜索🔍" @input="handleQueryName"/>
+      <el-input-tag class="query-input" v-model="queryInput" placeholder="请输入名字搜索🔍" @change="handleQueryName"/>
       <div class="btn-list">
       <el-button type="primary" @click="handleAdd">增加</el-button>
       <el-button type="danger" @click="handleDelList">删除多选</el-button>
@@ -39,6 +39,8 @@
       </el-table-column>
   </el-table>
 
+
+
     <!-- dialog -->
   <el-dialog v-model="dialogFormVisible" :title="dialogType === 'add'?'新增':'编辑' "width="500">
     <el-form :model="tableForm">
@@ -69,8 +71,8 @@
 
 <script setup>
 import { ref } from 'vue'
-
-  // 数据
+import request from './utils/request'
+  /** 数据 */
   let queryInput = ref('')
   let tableData = ref([
   {
@@ -104,7 +106,7 @@ import { ref } from 'vue'
   let multipleSelection = ref([])
   let dialogFormVisible = ref(false)
   let tableForm = ref({
-    id: '',
+    ID: '',
     name: '',
     email: '',
     phone: '',
@@ -113,16 +115,25 @@ import { ref } from 'vue'
   })
   let dialogType = ref('add')
 
-  // 方法
+  /* 方法 */ 
 
-//搜索
-const handleQueryName = (val)=>{
-  if (val.length>0) {
-    tableData.value = tableData.value.filter(item => (item.name).toLowerCase().match(val.toLowerCase()))
-  }else{
-    tableData.value = tableDataCopy.value
-  }
+const getTableData = async () =>{
+  let res = await request.get('/list')
+  console.log(res);
+  tableData.value = res
   
+}
+getTableData()
+//搜索
+const handleQueryName = async (val)=>{
+  // if (val.length>0) {
+  //   tableData.value = tableData.value.filter(item => (item.name).toLowerCase().match(val.toLowerCase()))
+  // }else{
+  //   tableData.value = tableDataCopy.value
+  // }
+
+  let res = await request.get(`/list/${val}`)
+  tableData.value = res
 }
 //编辑
 const handleEdit = (row)=>{
@@ -132,16 +143,20 @@ const handleEdit = (row)=>{
 }
 
  // 删除单条数据 
-const handleRowDel = ({id}) =>{
-  //1.通过id获取到条目对应的索引
-  let index = tableData.value.findIndex(item => item.id === id)
-  //2.通过索引删除对应条目数据
-  tableData.value.splice(index, 1)
+const handleRowDel = async({ID}) =>{
+  // //1.通过id获取到条目对应的索引
+  // let index = tableData.value.findIndex(item => item.id === id)
+  // //2.通过索引删除对应条目数据
+  // tableData.value.splice(index, 1)
+
+  await request.delete(`/delete/${ID}`)
+  await getTableData()
+
 }
 // 删除多条数据
 const handleDelList = ()=>{
-  multipleSelection.value.forEach(id => {
-    handleRowDel({id})
+  multipleSelection.value.forEach(ID => {
+    handleRowDel({ID})
   })
   multipleSelection.value = []
 }
@@ -150,7 +165,7 @@ const handleSelectionChange = (val) => {
   // multipleSelection.value = val
   multipleSelection.value = []
   val.forEach(item => {
-    multipleSelection.value.push(item.id)
+    multipleSelection.value.push(item.ID)
   })
 }
 
@@ -162,24 +177,38 @@ const handleAdd = () => {
 }
 
 //确认
-const dialogConfirm = () => {
+const dialogConfirm = async() => {
   dialogFormVisible.value = false
 
   //判断是新增还是更改
   if (dialogType.value === 'add') {
     // 1.拿到数据
     // 2.添加到table
-  tableData.value.push(
-    {
-      id:(tableData.value.length + 1).toString(),
+    // tableData.value.push(
+    //   {
+    //     id:(tableData.value.length + 1).toString(),
+    //     ...tableForm.value
+    //   }
+    // )
+
+    //添加数据
+    await request.post('/add',{
       ...tableForm.value
-    }
-  )
+    })
+    //刷新数据
+    await getTableData()
+
   }else{
-    // 1.获取到当前的这条索引
-    let index = tableData.value.findIndex(item => item.id === tableForm.value.id) 
-    // 2.替换当前索引值对应的数据
-    tableData.value[index] = tableForm.value
+    // // 1.获取到当前的这条索引
+    // let index = tableData.value.findIndex(item => item.id === tableForm.value.id) 
+    // // 2.替换当前索引值对应的数据
+    // tableData.value[index] = tableForm.value
+
+    //更改数据
+    await request.put(`/update/${tableForm.value.ID}`,{
+      ...tableForm.value
+    })
+    await getTableData()
   }
 
   
