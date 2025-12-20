@@ -2,7 +2,7 @@
   <div class="table-box">
     <!-- 标题 -->
      <div class="title">
-      <h2>最简单的crud demo</h2>
+      <h2>用户管理</h2>
      </div>
      
      <!-- query -->
@@ -38,7 +38,14 @@
         </template>
       </el-table-column>
   </el-table>
-
+  <el-pagination
+      background
+      layout="prev, pager, next"
+      :total="total"
+      style="display: flex; justify-content: center; margin-top: 10px;"
+      :current-page="curPage"
+      @current-change="handleChangePage"
+    />
 
 
     <!-- dialog -->
@@ -114,16 +121,27 @@ import request from './utils/request'
     address: '',
   })
   let dialogType = ref('add')
-
+  let total = ref(10)
+  let curPage = ref(1)
   /* 方法 */ 
 
-const getTableData = async () =>{
-  let res = await request.get('/list')
-  console.log(res);
-  tableData.value = res
+const getTableData = async (cul = 1) =>{
+  let res = await request.get('/list',{
+    pageSize:10,
+    pageNum:cul
+  })
+  console.log(res.list);
+  tableData.value = res.list
+  total.value = res.total
+  curPage.value = res.pageNum
   
 }
-getTableData()
+getTableData(1)
+
+// 请求分页
+const handleChangePage = async (cul) =>{
+  await getTableData(cul)
+}
 //搜索
 const handleQueryName = async (val)=>{
   // if (val.length>0) {
@@ -131,9 +149,13 @@ const handleQueryName = async (val)=>{
   // }else{
   //   tableData.value = tableDataCopy.value
   // }
+  if (val.length>0) {
+    let res = await request.get(`/list/${val}`)
+    tableData.value = res
+  }else{
+    await getTableData(1)
+  }
 
-  let res = await request.get(`/list/${val}`)
-  tableData.value = res
 }
 //编辑
 const handleEdit = (row)=>{
@@ -196,7 +218,7 @@ const dialogConfirm = async() => {
       ...tableForm.value
     })
     //刷新数据
-    await getTableData()
+    await getTableData(curPage.value)
 
   }else{
     // // 1.获取到当前的这条索引
@@ -208,7 +230,7 @@ const dialogConfirm = async() => {
     await request.put(`/update/${tableForm.value.ID}`,{
       ...tableForm.value
     })
-    await getTableData()
+    await getTableData(curPage.value)
   }
 
   
